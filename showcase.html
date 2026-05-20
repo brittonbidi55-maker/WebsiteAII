@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What Claude Can Code</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #05050f;
+      --card: #0d0d1e;
+      --border: #1e1e3a;
+      --a1: #7c3aed;
+      --a2: #06b6d4;
+      --a3: #f59e0b;
+      --a4: #ec4899;
+      --text: #e2e8f0;
+      --muted: #4a5568;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: .9rem 2rem;
+      background: rgba(5,5,15,.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-weight: 900;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
+    nav a { color: var(--muted); text-decoration: none; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; transition: color .2s; }
+    nav a:hover { color: var(--a2); }
+
+    /* HERO */
+    #hero {
+      position: relative;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    #hero-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 0 1.5rem;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      font-size: .7rem;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: var(--a2);
+      border: 1px solid rgba(6,182,212,.3);
+      padding: .35rem 1rem;
+      border-radius: 99px;
+      margin-bottom: 1.5rem;
+      background: rgba(6,182,212,.07);
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 8vw, 6.5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      background: linear-gradient(135deg, #fff 0%, var(--a2) 40%, var(--a1) 75%, var(--a4) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.2rem;
+    }
+
+    .hero-sub {
+      color: var(--muted);
+      font-size: 1.1rem;
+      max-width: 520px;
+      margin: 0 auto 2rem;
+      line-height: 1.7;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .4rem;
+      color: var(--muted);
+      font-size: .75rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* DEMO SECTIONS */
+    .demo-section {
+      padding: 5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .demo-header { text-align: center; }
+
+    .demo-tag {
+      font-size: .7rem;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--a1);
+      margin-bottom: .5rem;
+    }
+
+    .demo-title {
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 800;
+      margin-bottom: .6rem;
+    }
+
+    .demo-desc {
+      color: var(--muted);
+      font-size: .95rem;
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      border-radius: 1rem;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 0 60px rgba(124,58,237,.1);
+    }
+
+    canvas.demo-canvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    .canvas-label {
+      position: absolute;
+      top: .75rem;
+      left: 1rem;
+      font-size: .7rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .canvas-hint {
+      position: absolute;
+      bottom: .75rem;
+      right: 1rem;
+      font-size: .7rem;
+      letter-spacing: .1em;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* BUTTONS */
+    .btn-row {
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: .6rem 1.4rem;
+      border-radius: 99px;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+    }
+
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      color: #fff;
+      box-shadow: 0 0 20px rgba(124,58,237,.35);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover { border-color: var(--a2); color: var(--a2); }
+
+    /* CODE EDITOR */
+    .editor-wrap {
+      width: 100%;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    @media (max-width: 640px) {
+      .editor-wrap { grid-template-columns: 1fr; }
+    }
+
+    .code-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+
+    .code-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+
+    .dot-row { display: flex; gap: .4rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .lang-tag { font-size: .72rem; color: var(--muted); letter-spacing: .1em; }
+
+    textarea#code-input {
+      width: 100%;
+      min-height: 280px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--a2);
+      font-family: 'Courier New', monospace;
+      font-size: .88rem;
+      line-height: 1.7;
+      padding: 1rem;
+      resize: vertical;
+      caret-color: var(--a2);
+    }
+
+    #code-output-canvas {
+      display: block;
+      border-radius: 0 0 1rem 1rem;
+    }
+
+    .run-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .6rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    #run-status {
+      font-size: .75rem;
+      color: var(--muted);
+    }
+
+    /* STATS BAR */
+    .perf-bar {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .perf-stat {
+      text-align: center;
+    }
+
+    .perf-num {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--a3), var(--a4));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .perf-label {
+      font-size: .75rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* 3D */
+    #canvas-3d { cursor: grab; }
+    #canvas-3d:active { cursor: grabbing; }
+
+    /* GENERATIVE */
+    .gen-controls {
+      display: flex;
+      gap: .6rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .color-swatch {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s;
+    }
+
+    .color-swatch:hover, .color-swatch.active { transform: scale(1.3); border-color: #fff; }
+
+    footer {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--muted);
+      font-size: .8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer a { color: var(--a2); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">&#9670; Claude Code — Showcase</span>
+  <ul>
+    <li><a href="#physics">Physics</a></li>
+    <li><a href="#neural">Neural Net</a></li>
+    <li><a href="#genart">Gen Art</a></li>
+    <li><a href="#live-code">Live Code</a></li>
+    <li><a href="#threed">3D</a></li>
+    <li><a href="index.html">← Home</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-badge">Interactive Demos — All Vanilla JS</div>
+    <h1 class="hero-title">What Claude<br>Can Code</h1>
+    <p class="hero-sub">Five live demos. Zero libraries. Physics, neural networks, generative art, a live code editor, and 3D graphics — all written from scratch.</p>
+    <p style="color:var(--a2);font-size:.8rem;letter-spacing:.1em;">MOVE YOUR MOUSE OVER THE PARTICLES ↑</p>
+  </div>
+  <div class="scroll-hint">▼ scroll to explore</div>
+</section>
+
+<!-- 1. PHYSICS -->
+<section class="demo-section" id="physics">
+  <div class="demo-header">
+    <p class="demo-tag">Demo 01</p>
+    <h2 class="demo-title">Real-Time Physics Engine</h2>
+    <p class="demo-desc">Full collision detection, gravity, elasticity, and friction — built from scratch. Click to spawn balls, drag to throw them.</p>
+  </div>
+  <div class="canvas-wrap">
+    <span class="canvas-label">Physics Sandbox</span>
+    <span class="canvas-hint">Click to add · drag to throw</span>
+    <canvas class="demo-canvas" id="physics-canvas" width="700" height="420"></canvas>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="physics-add">+ Spawn 10 Balls</button>
+    <button class="btn btn-ghost" id="physics-clear">Clear</button>
+    <button class="btn btn-ghost" id="physics-gravity">Flip Gravity</button>
+  </div>
+  <div class="perf-bar">
+    <div class="perf-stat"><div class="perf-num" id="ball-count">0</div><div class="perf-label">Balls</div></div>
+    <div class="perf-stat"><div class="perf-num" id="collision-count">0</div><div class="perf-label">Collisions</div></div>
+    <div class="perf-stat"><div class="perf-num" id="fps-count">60</div><div class="perf-label">FPS</div></div>
+  </div>
+</section>
+
+<!-- 2. NEURAL NET -->
+<section class="demo-section" id="neural">
+  <div class="demo-header">
+    <p class="demo-tag">Demo 02</p>
+    <h2 class="demo-title">Neural Network Visualizer</h2>
+    <p class="demo-desc">Watch a forward pass propagate through the network in real time. Every connection animates as signals travel layer by layer.</p>
+  </div>
+  <div class="canvas-wrap">
+    <span class="canvas-label">Neural Network — Live Forward Pass</span>
+    <canvas class="demo-canvas" id="nn-canvas" width="700" height="420"></canvas>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="nn-fire">Fire Pulse ⚡</button>
+    <button class="btn btn-ghost" id="nn-auto">Auto-fire: OFF</button>
+  </div>
+</section>
+
+<!-- 3. GENERATIVE ART -->
+<section class="demo-section" id="genart">
+  <div class="demo-header">
+    <p class="demo-tag">Demo 03</p>
+    <h2 class="demo-title">Generative Art Engine</h2>
+    <p class="demo-desc">Algorithmic art generated on the fly. Every render is unique — built with recursive L-systems and Perlin-like noise.</p>
+  </div>
+  <div class="canvas-wrap">
+    <span class="canvas-label">Generative Canvas</span>
+    <span class="canvas-hint">Every click = new art</span>
+    <canvas class="demo-canvas" id="gen-canvas" width="700" height="420" style="cursor:pointer"></canvas>
+  </div>
+  <div class="gen-controls">
+    <div class="color-swatch active" data-palette="cosmic" style="background:linear-gradient(135deg,#7c3aed,#06b6d4)" title="Cosmic"></div>
+    <div class="color-swatch" data-palette="fire" style="background:linear-gradient(135deg,#f59e0b,#ef4444)" title="Fire"></div>
+    <div class="color-swatch" data-palette="forest" style="background:linear-gradient(135deg,#059669,#34d399)" title="Forest"></div>
+    <div class="color-swatch" data-palette="candy" style="background:linear-gradient(135deg,#ec4899,#f472b6)" title="Candy"></div>
+    <div class="color-swatch" data-palette="mono" style="background:linear-gradient(135deg,#334155,#94a3b8)" title="Mono"></div>
+    <button class="btn btn-primary" id="gen-new">New Artwork ✦</button>
+  </div>
+</section>
+
+<!-- 4. LIVE CODE -->
+<section class="demo-section" id="live-code">
+  <div class="demo-header">
+    <p class="demo-tag">Demo 04</p>
+    <h2 class="demo-title">Live Code Editor</h2>
+    <p class="demo-desc">Write JavaScript, hit Run, watch it draw. The canvas API is pre-wired — just describe what to draw.</p>
+  </div>
+  <div class="editor-wrap">
+    <div class="code-panel">
+      <div class="code-panel-header">
+        <div class="dot-row"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <span class="lang-tag">JavaScript</span>
+      </div>
+      <textarea id="code-input" spellcheck="false">// canvas (400x280) and ctx are ready.
+// Try editing this code and clicking Run!
+
+const cx = 200, cy = 140;
+const rings = 12;
+
+for (let i = rings; i >= 1; i--) {
+  const t = Date.now() / 1000;
+  const r = (i / rings) * 130;
+  const hue = (i * 30 + t * 40) % 360;
+  const x = cx + Math.sin(t + i) * (i * 3);
+  const y = cy + Math.cos(t * .7 + i) * (i * 2);
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = `hsl(${hue},90%,60%)`;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+</textarea>
+      <div class="run-bar">
+        <span id="run-status">Ready</span>
+        <button class="btn btn-primary" id="run-btn" style="padding:.4rem 1rem;font-size:.8rem">▶ Run</button>
+      </div>
+    </div>
+    <div class="code-panel">
+      <div class="code-panel-header">
+        <div class="dot-row"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <span class="lang-tag">Output</span>
+      </div>
+      <canvas id="code-output-canvas" width="400" height="280"></canvas>
+      <div class="run-bar">
+        <span style="font-size:.72rem;color:var(--muted)">Animated — updates 60fps after Run</span>
+        <button class="btn btn-ghost" id="stop-btn" style="padding:.4rem 1rem;font-size:.8rem">■ Stop</button>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row" style="margin-top:.5rem">
+    <button class="btn btn-ghost" data-snippet="spiral">Spiral</button>
+    <button class="btn btn-ghost" data-snippet="lissajous">Lissajous</button>
+    <button class="btn btn-ghost" data-snippet="fractal">Fractal Tree</button>
+    <button class="btn btn-ghost" data-snippet="matrix">Matrix Rain</button>
+  </div>
+</section>
+
+<!-- 5. 3D -->
+<section class="demo-section" id="threed">
+  <div class="demo-header">
+    <p class="demo-tag">Demo 05</p>
+    <h2 class="demo-title">3D Graphics Engine</h2>
+    <p class="demo-desc">A full 3D perspective projection engine — no WebGL, no Three.js. Just math and canvas. Drag to rotate.</p>
+  </div>
+  <div class="canvas-wrap">
+    <span class="canvas-label">3D Wireframe Engine</span>
+    <span class="canvas-hint">Drag to rotate</span>
+    <canvas id="canvas-3d" width="700" height="420"></canvas>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="shape-cube">Cube</button>
+    <button class="btn btn-ghost" id="shape-octa">Octahedron</button>
+    <button class="btn btn-ghost" id="shape-icosa">Icosahedron</button>
+    <button class="btn btn-ghost" id="shape-torus">Torus Knot</button>
+  </div>
+</section>
+
+<footer>
+  Every line of code on this page was written by <strong>Claude Code</strong> — no libraries, no frameworks, no templates. &nbsp;|&nbsp; <a href="index.html">← Back to Home</a>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════
+   HERO — interactive magnetic particle field
+══════════════════════════════════════════ */
+(function () {
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles, mouse = { x: -1000, y: -1000 };
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function mkParticle() {
+    const hue = Math.random() * 60 + 220;
+    return {
+      x: Math.random() * W, y: Math.random() * H,
+      ox: 0, oy: 0,
+      vx: 0, vy: 0,
+      r: Math.random() * 2 + .5,
+      hue, alpha: Math.random() * .6 + .2
+    };
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: 180 }, () => {
+      const p = mkParticle();
+      p.ox = p.x; p.oy = p.y;
+      return p;
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    particles.forEach(p => {
+      const dx = mouse.x - p.x, dy = mouse.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const force = Math.max(0, 100 - dist) / 100;
+      p.vx += (-dx / dist || 0) * force * 3;
+      p.vy += (-dy / dist || 0) * force * 3;
+      p.vx += (p.ox - p.x) * .04;
+      p.vy += (p.oy - p.y) * .04;
+      p.vx *= .88; p.vy *= .88;
+      p.x += p.vx; p.y += p.vy;
+      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      const h = (p.hue + speed * 8) % 360;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r + speed * .5, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${h},90%,65%,${p.alpha})`;
+      ctx.fill();
+    });
+
+    // connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 80) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(124,58,237,${.15 * (1 - d / 80)})`;
+          ctx.lineWidth = .6;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - r.left;
+    mouse.y = e.clientY - r.top;
+  });
+  canvas.addEventListener('mouseleave', () => { mouse.x = -1000; mouse.y = -1000; });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    mouse.x = e.touches[0].clientX - r.left;
+    mouse.y = e.touches[0].clientY - r.top;
+  }, { passive: false });
+
+  window.addEventListener('resize', init);
+  init(); draw();
+})();
+
+
+/* ══════════════════════════════════════
+   PHYSICS ENGINE
+══════════════════════════════════════ */
+(function () {
+  const canvas = document.getElementById('physics-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let balls = [], gravity = .4, collisions = 0, frameCount = 0, fps = 60, lastTime = performance.now();
+
+  function mkBall(x, y, vx, vy) {
+    const r = Math.random() * 18 + 8;
+    const hue = Math.random() * 360;
+    return { x: x ?? Math.random() * (W - 60) + 30, y: y ?? -r, vx: vx ?? (Math.random() - .5) * 4, vy: vy ?? Math.random() * 2, r, hue, bounce: .72 + Math.random() * .18 };
+  }
+
+  function spawnN(n) { for (let i = 0; i < n; i++) balls.push(mkBall()); }
+  spawnN(15);
+
+  function tick() {
+    const now = performance.now();
+    const dt = Math.min((now - lastTime) / 16.67, 3);
+    lastTime = now;
+    frameCount++;
+    if (frameCount % 20 === 0) fps = Math.round(1000 / (now - lastTime + 16));
+
+    ctx.fillStyle = 'rgba(13,13,30,.35)';
+    ctx.fillRect(0, 0, W, H);
+
+    balls.forEach(b => {
+      b.vy += gravity * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+
+      if (b.y + b.r > H) { b.y = H - b.r; b.vy *= -b.bounce; b.vx *= .97; }
+      if (b.y - b.r < 0) { b.y = b.r; b.vy *= -b.bounce; }
+      if (b.x + b.r > W) { b.x = W - b.r; b.vx *= -b.bounce; }
+      if (b.x - b.r < 0) { b.x = b.r; b.vx *= -b.bounce; }
+    });
+
+    // collision detection
+    for (let i = 0; i < balls.length; i++) {
+      for (let j = i + 1; j < balls.length; j++) {
+        const a = balls[i], b = balls[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const minD = a.r + b.r;
+        if (dist < minD && dist > .001) {
+          collisions++;
+          const nx = dx / dist, ny = dy / dist;
+          const overlap = (minD - dist) / 2;
+          a.x -= nx * overlap; a.y -= ny * overlap;
+          b.x += nx * overlap; b.y += ny * overlap;
+          const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+          const dot = dvx * nx + dvy * ny;
+          const e = (a.bounce + b.bounce) / 2;
+          a.vx -= dot * e * nx; a.vy -= dot * e * ny;
+          b.vx += dot * e * nx; b.vy += dot * e * ny;
+        }
+      }
+    }
+
+    // draw
+    balls.forEach(b => {
+      const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+      const grad = ctx.createRadialGradient(b.x - b.r * .3, b.y - b.r * .3, b.r * .1, b.x, b.y, b.r);
+      grad.addColorStop(0, `hsla(${(b.hue + speed * 5) % 360},90%,75%,.95)`);
+      grad.addColorStop(1, `hsla(${b.hue},80%,40%,.8)`);
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = `hsla(${b.hue},90%,80%,.3)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    document.getElementById('ball-count').textContent = balls.length;
+    document.getElementById('collision-count').textContent = collisions > 9999 ? (collisions / 1000).toFixed(1) + 'k' : collisions;
+    document.getElementById('fps-count').textContent = Math.round(fps);
+
+    requestAnimationFrame(tick);
+  }
+
+  // drag to throw
+  let dragging = null, dragStart = null, last = null;
+  canvas.addEventListener('mousedown', e => {
+    const r = canvas.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (W / r.width);
+    const my = (e.clientY - r.top) * (H / r.height);
+    dragStart = { x: mx, y: my, t: Date.now() };
+    last = { x: mx, y: my };
+    dragging = mkBall(mx, my, 0, 0);
+    dragging.r = Math.random() * 18 + 10;
+    balls.push(dragging);
+  });
+  canvas.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const r = canvas.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (W / r.width);
+    const my = (e.clientY - r.top) * (H / r.height);
+    dragging.vx = (mx - last.x) * .6;
+    dragging.vy = (my - last.y) * .6;
+    dragging.x = mx; dragging.y = my;
+    last = { x: mx, y: my };
+  });
+  canvas.addEventListener('mouseup', () => { dragging = null; });
+
+  document.getElementById('physics-add').onclick = () => spawnN(10);
+  document.getElementById('physics-clear').onclick = () => { balls = []; collisions = 0; };
+  document.getElementById('physics-gravity').onclick = () => { gravity *= -1; };
+
+  tick();
+})();
+
+
+/* ══════════════════════════════════════
+   NEURAL NETWORK VISUALIZER
+══════════════════════════════════════ */
+(function () {
+  const canvas = document.getElementById('nn-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const layers = [4, 6, 8, 6, 3];
+  const nodes = [];
+  const edges = [];
+  let pulses = [];
+  let autoFire = false, autoTimer = null;
+
+  // build node positions
+  layers.forEach((count, li) => {
+    nodes.push([]);
+    const x = 80 + (li / (layers.length - 1)) * (W - 160);
+    for (let ni = 0; ni < count; ni++) {
+      const y = H / 2 + (ni - (count - 1) / 2) * (H / (count + 1));
+      nodes[li].push({ x, y, act: 0, hue: li * 55 });
+    }
+  });
+
+  // build edges
+  for (let li = 0; li < layers.length - 1; li++) {
+    nodes[li].forEach((a, ai) => {
+      nodes[li + 1].forEach((b, bi) => {
+        edges.push({ a, b, w: Math.random() * 2 - 1 });
+      });
+    });
+  }
+
+  function firePulse() {
+    // start from random input node
+    const startLayer = 0;
+    nodes[startLayer].forEach(n => {
+      pulses.push({ x: n.x, y: n.y, tx: 0, ty: 0, layer: 0, nodeIdx: nodes[startLayer].indexOf(n), progress: 0, hue: Math.random() * 360, size: 5, alive: true });
+    });
+    propagate(0);
+  }
+
+  function propagate(li) {
+    if (li >= layers.length - 1) return;
+    setTimeout(() => {
+      nodes[li].forEach((src, si) => {
+        nodes[li + 1].forEach((dst, di) => {
+          setTimeout(() => {
+            pulses.push({ x: src.x, y: src.y, tx: dst.x, ty: dst.y, progress: 0, hue: (li * 55 + di * 20) % 360, layer: li + 1, alive: true, dst });
+          }, di * 30);
+        });
+      });
+      propagate(li + 1);
+    }, 280);
+  }
+
+  function draw() {
+    ctx.fillStyle = 'rgba(13,13,30,.25)';
+    ctx.fillRect(0, 0, W, H);
+
+    // edges
+    edges.forEach(e => {
+      const alpha = Math.abs(e.w) * .12;
+      ctx.beginPath();
+      ctx.moveTo(e.a.x, e.a.y);
+      ctx.lineTo(e.b.x, e.b.y);
+      ctx.strokeStyle = e.w > 0 ? `rgba(124,58,237,${alpha})` : `rgba(236,72,153,${alpha})`;
+      ctx.lineWidth = Math.abs(e.w) * .8;
+      ctx.stroke();
+    });
+
+    // pulses
+    pulses = pulses.filter(p => p.alive);
+    pulses.forEach(p => {
+      if (p.tx !== undefined && p.progress < 1) {
+        p.progress += .04;
+        const cx = p.x + (p.tx - p.x) * p.progress;
+        const cy = p.y + (p.ty - p.y) * p.progress;
+        // glow trail
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 10);
+        grad.addColorStop(0, `hsla(${p.hue},100%,70%,.9)`);
+        grad.addColorStop(1, `hsla(${p.hue},80%,50%,0)`);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        // activate destination node
+        if (p.progress >= 1) {
+          if (p.dst) p.dst.act = 1;
+          p.alive = false;
+        }
+      }
+    });
+
+    // nodes
+    nodes.forEach((layer, li) => {
+      layer.forEach(n => {
+        n.act = Math.max(0, n.act - .02);
+        const r = 14 + n.act * 8;
+        const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r);
+        const h = n.hue + n.act * 60;
+        grad.addColorStop(0, `hsla(${h},90%,75%,${.6 + n.act * .4})`);
+        grad.addColorStop(1, `hsla(${h},70%,40%,.2)`);
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        if (n.act > .1) {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r + 6, 0, Math.PI * 2);
+          ctx.strokeStyle = `hsla(${h},90%,65%,${n.act * .5})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      });
+    });
+
+    // layer labels
+    const lnames = ['Input', 'Hidden', 'Hidden', 'Hidden', 'Output'];
+    layers.forEach((_, li) => {
+      const x = 80 + (li / (layers.length - 1)) * (W - 160);
+      ctx.fillStyle = 'rgba(100,116,139,.6)';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(lnames[Math.min(li, lnames.length - 1)], x, H - 10);
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  document.getElementById('nn-fire').onclick = firePulse;
+  document.getElementById('nn-auto').onclick = function () {
+    autoFire = !autoFire;
+    this.textContent = `Auto-fire: ${autoFire ? 'ON' : 'OFF'}`;
+    this.style.borderColor = autoFire ? 'var(--a2)' : '';
+    this.style.color = autoFire ? 'var(--a2)' : '';
+    if (autoFire) autoTimer = setInterval(firePulse, 900);
+    else clearInterval(autoTimer);
+  };
+
+  // initial pulse after short delay
+  setTimeout(firePulse, 600);
+  draw();
+})();
+
+
+/* ══════════════════════════════════════
+   GENERATIVE ART ENGINE
+══════════════════════════════════════ */
+(function () {
+  const canvas = document.getElementById('gen-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const palettes = {
+    cosmic: ['#7c3aed','#a855f7','#06b6d4','#0ea5e9','#c4b5fd'],
+    fire:   ['#f59e0b','#f97316','#ef4444','#fcd34d','#fed7aa'],
+    forest: ['#059669','#10b981','#34d399','#065f46','#6ee7b7'],
+    candy:  ['#ec4899','#f472b6','#db2777','#fce7f3','#be185d'],
+    mono:   ['#334155','#475569','#64748b','#94a3b8','#cbd5e1'],
+  };
+
+  let currentPalette = palettes.cosmic;
+  let mode = 0;
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function drawFlowField() {
+    ctx.fillStyle = '#05050f';
+    ctx.fillRect(0, 0, W, H);
+    const step = 14;
+    const scale = .006;
+    // simple pseudo-noise flow field
+    for (let x = 0; x < W; x += step) {
+      for (let y = 0; y < H; y += step) {
+        const angle = (Math.sin(x * scale) + Math.cos(y * scale)) * Math.PI * 2 + Math.sin(x * scale * .5 + y * scale * .5) * Math.PI;
+        const len = rnd(4, step * .8);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+        ctx.strokeStyle = pick(currentPalette) + 'aa';
+        ctx.lineWidth = rnd(.5, 1.5);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawSpiral() {
+    ctx.fillStyle = '#05050f';
+    ctx.fillRect(0, 0, W, H);
+    const cx = W / 2 + rnd(-50, 50), cy = H / 2 + rnd(-30, 30);
+    const arms = Math.floor(rnd(3, 8));
+    for (let arm = 0; arm < arms; arm++) {
+      const baseAngle = (arm / arms) * Math.PI * 2;
+      ctx.beginPath();
+      for (let t = 0; t < 25; t += .02) {
+        const r = t * 11;
+        const a = baseAngle + t * .8;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = pick(currentPalette);
+      ctx.lineWidth = rnd(.5, 2.5);
+      ctx.globalAlpha = rnd(.3, .9);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    // scatter dots
+    for (let i = 0; i < 200; i++) {
+      const t = rnd(0, 25);
+      const arm = Math.floor(rnd(0, arms));
+      const baseAngle = (arm / arms) * Math.PI * 2;
+      const r = t * 11;
+      const a = baseAngle + t * .8;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, rnd(.5, 3), 0, Math.PI * 2);
+      ctx.fillStyle = pick(currentPalette);
+      ctx.globalAlpha = rnd(.2, .8);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawTree(x, y, angle, depth, len) {
+    if (depth === 0) return;
+    const x2 = x + Math.cos(angle) * len;
+    const y2 = y + Math.sin(angle) * len;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = pick(currentPalette);
+    ctx.lineWidth = depth * .8;
+    ctx.globalAlpha = .4 + depth * .06;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    const spread = rnd(.3, .6);
+    const branches = Math.random() > .3 ? 2 : 3;
+    for (let i = 0; i < branches; i++) {
+      const dir = (i / (branches - 1) - .5) * Math.PI * spread;
+      drawTree(x2, y2, angle + dir + rnd(-.1, .1), depth - 1, len * rnd(.6, .8));
+    }
+  }
+
+  function drawFractalTree() {
+    ctx.fillStyle = '#05050f';
+    ctx.fillRect(0, 0, W, H);
+    const count = Math.floor(rnd(1, 4));
+    for (let i = 0; i < count; i++) {
+      const x = rnd(W * .2, W * .8);
+      drawTree(x, H, -Math.PI / 2 + rnd(-.2, .2), 10, rnd(60, 90));
+    }
+  }
+
+  function drawMandala() {
+    ctx.fillStyle = '#05050f';
+    ctx.fillRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2;
+    const sym = Math.floor(rnd(4, 12));
+    const rings = Math.floor(rnd(3, 7));
+
+    for (let ring = 1; ring <= rings; ring++) {
+      const r = ring * (Math.min(W, H) / 2.2 / rings);
+      for (let s = 0; s < sym; s++) {
+        const a = (s / sym) * Math.PI * 2;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        ctx.beginPath();
+        ctx.arc(x, y, rnd(r * .05, r * .18), 0, Math.PI * 2);
+        ctx.fillStyle = pick(currentPalette);
+        ctx.globalAlpha = rnd(.3, .8);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = pick(currentPalette) + '44';
+        ctx.lineWidth = .8;
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = pick(currentPalette) + '33';
+      ctx.lineWidth = .6;
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, rnd(5, 20), 0, Math.PI * 2);
+    ctx.fillStyle = pick(currentPalette);
+    ctx.globalAlpha = .9;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  const generators = [drawFlowField, drawSpiral, drawFractalTree, drawMandala];
+
+  function generate() {
+    const gen = generators[mode % generators.length];
+    gen();
+    mode++;
+  }
+
+  canvas.addEventListener('click', generate);
+  document.getElementById('gen-new').onclick = generate;
+
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+      currentPalette = palettes[sw.dataset.palette];
+      generate();
+    });
+  });
+
+  generate();
+})();
+
+
+/* ══════════════════════════════════════
+   LIVE CODE EDITOR
+══════════════════════════════════════ */
+(function () {
+  const textarea = document.getElementById('code-input');
+  const outputCanvas = document.getElementById('code-output-canvas');
+  const ctx = outputCanvas.getContext('2d');
+  const status = document.getElementById('run-status');
+  let animId = null;
+
+  const snippets = {
+    spiral: `const cx = 200, cy = 140;
+for (let t = 0; t < 80; t += .01) {
+  const r = t * 2.2;
+  const hue = t * 4 + Date.now() / 30;
+  const x = cx + Math.cos(t * 5) * r;
+  const y = cy + Math.sin(t * 5) * r;
+  ctx.beginPath();
+  ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = \`hsl(\${hue%360},90%,65%)\`;
+  ctx.fill();
+}`,
+    lissajous: `const cx = 200, cy = 140, A = 120, B = 100;
+const t = Date.now() / 1000;
+ctx.beginPath();
+for (let i = 0; i <= 628; i++) {
+  const f = i / 100;
+  const x = cx + A * Math.sin(3 * f + t);
+  const y = cy + B * Math.sin(2 * f);
+  i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+}
+const g = ctx.createLinearGradient(80,40,320,240);
+g.addColorStop(0,'#7c3aed'); g.addColorStop(1,'#06b6d4');
+ctx.strokeStyle = g; ctx.lineWidth = 2; ctx.stroke();`,
+    fractal: `function branch(x,y,a,d,l){
+  if(d<1)return;
+  const x2=x+Math.cos(a)*l, y2=y+Math.sin(a)*l;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x2,y2);
+  const h=(d*25)%360;
+  ctx.strokeStyle=\`hsl(\${h},80%,60%)\`;
+  ctx.lineWidth=d*.7; ctx.stroke();
+  const t=Date.now()/2000;
+  branch(x2,y2,a-.4+Math.sin(t)*.15,d-1,l*.72);
+  branch(x2,y2,a+.4+Math.cos(t)*.15,d-1,l*.72);
+}
+branch(200, 280, -Math.PI/2, 10, 55);`,
+    matrix: `const cols=Math.floor(400/14), drops=Array(cols).fill(1);
+ctx.fillStyle='rgba(5,5,15,.15)'; ctx.fillRect(0,0,400,280);
+ctx.fillStyle='#06b6d4'; ctx.font='13px monospace';
+drops.forEach((y,i)=>{
+  const ch=String.fromCharCode(0x30A0+Math.random()*96);
+  ctx.fillText(ch, i*14, y*14);
+  if(y*14>280 && Math.random()>.95) drops[i]=0;
+  drops[i]++;
+});`,
+  };
+
+  function runCode() {
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    const code = textarea.value;
+    status.textContent = 'Running...';
+    status.style.color = 'var(--a2)';
+
+    let loopFn;
+    try {
+      loopFn = new Function('ctx', 'canvas', `
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ${code}
+      `);
+    } catch (e) {
+      status.textContent = 'Syntax error: ' + e.message;
+      status.style.color = '#ef4444';
+      return;
+    }
+
+    function loop() {
+      try {
+        ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+        loopFn(ctx, outputCanvas);
+        status.textContent = 'Running — 60fps';
+        status.style.color = '#10b981';
+      } catch (e) {
+        status.textContent = 'Runtime error: ' + e.message;
+        status.style.color = '#ef4444';
+        cancelAnimationFrame(animId);
+        return;
+      }
+      animId = requestAnimationFrame(loop);
+    }
+    loop();
+  }
+
+  document.getElementById('run-btn').onclick = runCode;
+  document.getElementById('stop-btn').onclick = () => {
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    status.textContent = 'Stopped';
+    status.style.color = 'var(--muted)';
+  };
+
+  document.querySelectorAll('[data-snippet]').forEach(btn => {
+    btn.onclick = () => { textarea.value = snippets[btn.dataset.snippet]; runCode(); };
+  });
+
+  // auto-run on load
+  runCode();
+})();
+
+
+/* ══════════════════════════════════════
+   3D WIREFRAME ENGINE
+══════════════════════════════════════ */
+(function () {
+  const canvas = document.getElementById('canvas-3d');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  let rotX = .4, rotY = .6, rotZ = 0;
+  let autoRotX = .003, autoRotY = .006;
+  let dragging = false, lastMX, lastMY;
+  let currentVerts, currentEdges, currentFaces;
+  let hue = 200;
+
+  // shape builders
+  function cube() {
+    const v = [];
+    for (let x of [-1,1]) for (let y of [-1,1]) for (let z of [-1,1]) v.push([x,y,z]);
+    const e = [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+    return { v, e };
+  }
+
+  function octahedron() {
+    const v = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    const e = [[0,2],[0,3],[1,2],[1,3],[0,4],[0,5],[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]];
+    return { v, e };
+  }
+
+  function icosahedron() {
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const v = [
+      [0,1,phi],[0,-1,phi],[0,1,-phi],[0,-1,-phi],
+      [1,phi,0],[-1,phi,0],[1,-phi,0],[-1,-phi,0],
+      [phi,0,1],[-phi,0,1],[phi,0,-1],[-phi,0,-1]
+    ].map(([x,y,z]) => { const l = Math.sqrt(x*x+y*y+z*z); return [x/l,y/l,z/l]; });
+    const e = [[0,1],[0,4],[0,5],[0,8],[0,9],[1,6],[1,7],[1,8],[1,9],[2,3],[2,4],[2,5],[2,10],[2,11],[3,6],[3,7],[3,10],[3,11],[4,5],[4,8],[4,10],[5,9],[5,11],[6,7],[6,8],[6,10],[7,9],[7,11],[8,10],[9,11]];
+    return { v, e };
+  }
+
+  function torusKnot(p = 2, q = 3, steps = 120, tubeSteps = 8, R = 1, r = .35, tube = .12) {
+    const v = [], e = [];
+    const pts = [];
+    for (let i = 0; i < steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      const phi = q * t, theta = p * t;
+      const x = (R + r * Math.cos(phi)) * Math.cos(theta);
+      const y = (R + r * Math.cos(phi)) * Math.sin(theta);
+      const z = r * Math.sin(phi);
+      pts.push([x, y, z]);
+    }
+    // build tube vertices around path
+    for (let i = 0; i < steps; i++) {
+      const a = pts[i], b = pts[(i + 1) % steps];
+      const tang = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
+      const tl = Math.sqrt(tang[0]**2+tang[1]**2+tang[2]**2);
+      const t = tang.map(x => x/tl);
+      const up = Math.abs(t[1]) < .9 ? [0,1,0] : [1,0,0];
+      // Gram-Schmidt
+      const dot = t[0]*up[0]+t[1]*up[1]+t[2]*up[2];
+      const n = [up[0]-dot*t[0], up[1]-dot*t[1], up[2]-dot*t[2]];
+      const nl = Math.sqrt(n[0]**2+n[1]**2+n[2]**2);
+      const nn = n.map(x => x/nl);
+      const bi = [t[1]*nn[2]-t[2]*nn[1], t[2]*nn[0]-t[0]*nn[2], t[0]*nn[1]-t[1]*nn[0]];
+      for (let j = 0; j < tubeSteps; j++) {
+        const ang = (j / tubeSteps) * Math.PI * 2;
+        const co = Math.cos(ang) * tube, si = Math.sin(ang) * tube;
+        v.push([a[0]+co*nn[0]+si*bi[0], a[1]+co*nn[1]+si*bi[1], a[2]+co*nn[2]+si*bi[2]]);
+      }
+    }
+    // edges along tube
+    for (let i = 0; i < steps; i++) {
+      for (let j = 0; j < tubeSteps; j++) {
+        const cur = i * tubeSteps + j;
+        const nextJ = i * tubeSteps + (j + 1) % tubeSteps;
+        const nextI = ((i + 1) % steps) * tubeSteps + j;
+        e.push([cur, nextJ], [cur, nextI]);
+      }
+    }
+    return { v, e };
+  }
+
+  function setShape(shape) { currentVerts = shape.v; currentEdges = shape.e; }
+  setShape(cube());
+
+  function project([x, y, z], cx, cy) {
+    const fov = 4;
+    const scale = Math.min(W, H) * .28;
+    const pz = z + fov;
+    return [cx + (x / pz) * scale, cy + (y / pz) * scale, pz];
+  }
+
+  function rotate(verts, rx, ry, rz) {
+    return verts.map(([x, y, z]) => {
+      // X
+      let y2 = y * Math.cos(rx) - z * Math.sin(rx);
+      let z2 = y * Math.sin(rx) + z * Math.cos(rx);
+      // Y
+      let x3 = x * Math.cos(ry) + z2 * Math.sin(ry);
+      let z3 = -x * Math.sin(ry) + z2 * Math.cos(ry);
+      // Z
+      let x4 = x3 * Math.cos(rz) - y2 * Math.sin(rz);
+      let y4 = x3 * Math.sin(rz) + y2 * Math.cos(rz);
+      return [x4, y4, z3];
+    });
+  }
+
+  function draw() {
+    if (!dragging) { rotY += autoRotY; rotX += autoRotX * .3; }
+
+    ctx.fillStyle = 'rgba(5,5,15,.3)';
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W / 2, cy = H / 2;
+    const rotated = rotate(currentVerts, rotX, rotY, rotZ);
+    const projected = rotated.map(v => project(v, cx, cy));
+
+    // edges sorted by avg depth
+    const sortedEdges = [...currentEdges].sort((a, b) => {
+      const da = projected[a[0]][2] + projected[a[1]][2];
+      const db = projected[b[0]][2] + projected[b[1]][2];
+      return da - db;
+    });
+
+    sortedEdges.forEach(([i, j]) => {
+      const [ax, ay, az] = projected[i];
+      const [bx, by, bz] = projected[j];
+      const depth = (az + bz) / 2;
+      const bright = Math.max(20, Math.min(90, 120 - depth * 12));
+      const alpha = Math.max(.05, Math.min(.9, 1 - (depth - 3) * .15));
+      ctx.beginPath();
+      ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
+      ctx.strokeStyle = `hsla(${hue},80%,${bright}%,${alpha})`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    });
+
+    // vertices as glowing dots
+    projected.forEach(([px, py, pz]) => {
+      const size = Math.max(1, 5 - pz * .5);
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, size * 3);
+      grad.addColorStop(0, `hsla(${hue + 40},100%,80%,.8)`);
+      grad.addColorStop(1, `hsla(${hue},80%,50%,0)`);
+      ctx.beginPath();
+      ctx.arc(px, py, size * 3, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    });
+
+    hue = (hue + .3) % 360;
+    requestAnimationFrame(draw);
+  }
+
+  // drag rotation
+  canvas.addEventListener('mousedown', e => { dragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    rotY += (e.clientX - lastMX) * .008;
+    rotX += (e.clientY - lastMY) * .008;
+    lastMX = e.clientX; lastMY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => { dragging = false; });
+  canvas.addEventListener('touchstart', e => { dragging = true; lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY; });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    rotY += (e.touches[0].clientX - lastMX) * .01;
+    rotX += (e.touches[0].clientY - lastMY) * .01;
+    lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY;
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => { dragging = false; });
+
+  document.getElementById('shape-cube').onclick   = () => setShape(cube());
+  document.getElementById('shape-octa').onclick   = () => setShape(octahedron());
+  document.getElementById('shape-icosa').onclick  = () => setShape(icosahedron());
+  document.getElementById('shape-torus').onclick  = () => setShape(torusKnot());
+
+  draw();
+})();
+</script>
+</body>
+</html>
