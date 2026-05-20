@@ -35,9 +35,10 @@
     /* ── canvas (particles) ── */
     #canvas {
       position: fixed;
-      inset: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       z-index: 0;
       pointer-events: none;
+      background: transparent;
     }
 
     /* ── nav ── */
@@ -101,8 +102,6 @@
       letter-spacing: .25em;
       text-transform: uppercase;
       color: var(--accent2);
-      opacity: 0;
-      animation: fadeUp .7s .2s forwards;
     }
 
     .hero-title {
@@ -112,16 +111,12 @@
       background: linear-gradient(135deg, #fff 0%, var(--accent2) 50%, var(--accent1) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      opacity: 0;
-      animation: fadeUp .7s .4s forwards;
     }
 
     .hero-sub {
       max-width: 560px;
       font-size: 1.15rem;
       color: var(--muted);
-      opacity: 0;
-      animation: fadeUp .7s .6s forwards;
     }
 
     .btn-group {
@@ -129,9 +124,13 @@
       gap: 1rem;
       flex-wrap: wrap;
       justify-content: center;
-      opacity: 0;
-      animation: fadeUp .7s .8s forwards;
     }
+
+    /* animate hero in only when JS confirms the page is ready */
+    body.js-ready .hero-eyebrow { animation: fadeUp .7s .1s both; }
+    body.js-ready .hero-title   { animation: fadeUp .7s .25s both; }
+    body.js-ready .hero-sub     { animation: fadeUp .7s .4s both; }
+    body.js-ready .btn-group    { animation: fadeUp .7s .55s both; }
 
     .btn {
       padding: .75rem 2rem;
@@ -493,13 +492,14 @@
     @keyframes blink { 50% { opacity: 0; } }
 
     /* ── scroll reveal ── */
-    .reveal {
+    /* Visible by default — JS hides and re-reveals for animation */
+    body.js-ready .reveal {
       opacity: 0;
       transform: translateY(32px);
       transition: opacity .7s, transform .7s;
     }
 
-    .reveal.visible {
+    body.js-ready .reveal.visible {
       opacity: 1;
       transform: translateY(0);
     }
@@ -821,6 +821,14 @@
 </footer>
 
 <script>
+/* Mark page as JS-ready so CSS animations opt-in */
+document.body.classList.add('js-ready');
+
+/* Safety net: if anything stays invisible after 1.5s, force-show it */
+setTimeout(() => {
+  document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+}, 1500);
+
 /* ── Particle Canvas ── */
 (function () {
   const canvas = document.getElementById('canvas');
