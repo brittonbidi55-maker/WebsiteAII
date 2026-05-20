@@ -503,6 +503,89 @@
       opacity: 1;
       transform: translateY(0);
     }
+
+    /* ── modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      max-width: 560px;
+      width: 100%;
+      padding: 2.5rem;
+      position: relative;
+      animation: modalIn .3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(.9) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem; right: 1.2rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color .2s;
+    }
+
+    .modal-close:hover { color: var(--text); }
+
+    .modal-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: .6rem;
+    }
+
+    .modal-desc {
+      color: var(--muted);
+      font-size: .95rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.7;
+    }
+
+    .modal-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-feature {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      margin-bottom: .6rem;
+      font-size: .9rem;
+      color: var(--text);
+    }
+
+    .modal-feature::before {
+      content: '✦';
+      color: var(--accent2);
+      flex-shrink: 0;
+      margin-top: .05em;
+    }
   </style>
 </head>
 <body>
@@ -592,7 +675,7 @@
         <div class="project-tags"><span class="tag">AI</span><span class="tag">Python</span><span class="tag">FastAPI</span></div>
         <div class="project-name">AI Document Chat</div>
         <div class="project-desc">Upload any PDF, ask questions, get answers with citations — powered by Claude + vector search.</div>
-        <a href="#" class="project-link">View concept →</a>
+        <a href="#" class="project-link" data-modal="modal-ai">View concept →</a>
       </div>
     </div>
     <div class="project-card reveal">
@@ -601,7 +684,7 @@
         <div class="project-tags"><span class="tag">React</span><span class="tag">D3.js</span><span class="tag">Node</span></div>
         <div class="project-name">Real-Time Analytics Dashboard</div>
         <div class="project-desc">Live charts, drag-and-drop widgets, WebSocket data feeds, export to PDF.</div>
-        <a href="#" class="project-link">View concept →</a>
+        <a href="#" class="project-link" data-modal="modal-dash">View concept →</a>
       </div>
     </div>
     <div class="project-card reveal">
@@ -610,7 +693,7 @@
         <div class="project-tags"><span class="tag">Next.js</span><span class="tag">Stripe</span><span class="tag">Postgres</span></div>
         <div class="project-name">E-Commerce Platform</div>
         <div class="project-desc">Full storefront with cart, checkout, inventory management, and email receipts.</div>
-        <a href="#" class="project-link">View concept →</a>
+        <a href="#" class="project-link" data-modal="modal-shop">View concept →</a>
       </div>
     </div>
   </div>
@@ -680,6 +763,58 @@
     </div>
   </form>
 </section>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-ai">
+  <div class="modal">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <div class="modal-icon">🧠</div>
+    <div class="modal-title">AI Document Chat</div>
+    <div class="modal-stack">
+      <span class="tag">Claude API</span><span class="tag">Python</span><span class="tag">FastAPI</span><span class="tag">pgvector</span><span class="tag">React</span>
+    </div>
+    <div class="modal-desc">Drop any PDF or Word doc into the app and instantly chat with it. The system chunks the document, embeds it into a vector database, and uses Claude to answer questions with pinpoint citations back to the source.</div>
+    <div class="modal-feature">Drag-and-drop file upload with progress indicator</div>
+    <div class="modal-feature">Semantic search across hundreds of pages in milliseconds</div>
+    <div class="modal-feature">Answers include page numbers and highlighted quotes</div>
+    <div class="modal-feature">Multi-document mode: ask questions across an entire library</div>
+    <div class="modal-feature">Deployable to AWS Lambda — scales to zero when idle</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-dash">
+  <div class="modal">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <div class="modal-icon">📊</div>
+    <div class="modal-title">Real-Time Analytics Dashboard</div>
+    <div class="modal-stack">
+      <span class="tag">React</span><span class="tag">D3.js</span><span class="tag">Node</span><span class="tag">WebSockets</span><span class="tag">Redis</span>
+    </div>
+    <div class="modal-desc">A live business intelligence dashboard that streams data via WebSockets, renders interactive D3 charts, and lets users build custom views with drag-and-drop widgets — no page refresh needed.</div>
+    <div class="modal-feature">Live line, bar, pie, and heatmap charts updating every second</div>
+    <div class="modal-feature">Drag-and-drop widget layout saved per user</div>
+    <div class="modal-feature">Date-range picker with rolling windows (1h, 24h, 7d, 30d)</div>
+    <div class="modal-feature">One-click PDF / CSV export of any chart</div>
+    <div class="modal-feature">Role-based access: admins see everything, analysts see their team</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-shop">
+  <div class="modal">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <div class="modal-icon">🛒</div>
+    <div class="modal-title">E-Commerce Platform</div>
+    <div class="modal-stack">
+      <span class="tag">Next.js</span><span class="tag">Stripe</span><span class="tag">Postgres</span><span class="tag">Prisma</span><span class="tag">Vercel</span>
+    </div>
+    <div class="modal-desc">A full-featured online store with a polished storefront, real Stripe checkout, inventory management, order tracking, and automated email receipts — ready to sell on day one.</div>
+    <div class="modal-feature">Product catalog with search, filters, and variants (size, color)</div>
+    <div class="modal-feature">Stripe checkout with Apple Pay & Google Pay support</div>
+    <div class="modal-feature">Admin panel: manage stock, orders, and discounts</div>
+    <div class="modal-feature">Automated email receipts and shipping notifications</div>
+    <div class="modal-feature">SEO-optimised server-rendered product pages</div>
+  </div>
+</div>
 
 <footer>
   Built from scratch — live — by Claude Code &nbsp;·&nbsp; Every pixel, every animation, every line of JS: hand-written.
@@ -808,33 +943,73 @@
 /* ── Scroll Reveal ── */
 (function () {
   const els = document.querySelectorAll('.reveal');
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
 
-        // skill bars
-        const bar = e.target.querySelector('.skill-bar');
-        if (bar) bar.style.width = bar.dataset.width + '%';
-
-        // counters
-        e.target.querySelectorAll('.stat-number[data-target]').forEach(n => {
-          const target = parseInt(n.dataset.target, 10);
-          let count = 0;
-          const step = Math.ceil(target / 60);
-          const id = setInterval(() => {
-            count = Math.min(count + step, target);
-            n.textContent = count.toLocaleString();
-            if (count >= target) clearInterval(id);
-          }, 22);
-        });
-
-        io.unobserve(e.target);
-      }
+  function revealEl(el) {
+    if (el.classList.contains('visible')) return;
+    el.classList.add('visible');
+    const bar = el.querySelector('.skill-bar');
+    if (bar) bar.style.width = bar.dataset.width + '%';
+    el.querySelectorAll('.stat-number[data-target]').forEach(n => {
+      const target = parseInt(n.dataset.target, 10);
+      let count = 0;
+      const step = Math.ceil(target / 60);
+      const id = setInterval(() => {
+        count = Math.min(count + step, target);
+        n.textContent = count.toLocaleString();
+        if (count >= target) clearInterval(id);
+      }, 22);
     });
-  }, { threshold: .15 });
+  }
+
+  // IntersectionObserver for scroll-triggered reveals
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { revealEl(e.target); io.unobserve(e.target); } });
+  }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
 
   els.forEach(el => io.observe(el));
+
+  // When a nav/hero anchor link is clicked, immediately reveal everything in the target section
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', () => {
+      const id = link.getAttribute('href').slice(1);
+      if (!id) return;
+      const target = document.getElementById(id);
+      if (!target) return;
+      // Slight delay so the scroll starts first, then cascade reveals
+      setTimeout(() => {
+        target.querySelectorAll('.reveal').forEach((el, i) => {
+          setTimeout(() => revealEl(el), i * 80);
+        });
+      }, 80);
+    });
+  });
+})();
+
+/* ── Project Modals ── */
+(function () {
+  document.querySelectorAll('[data-modal]').forEach(trigger => {
+    trigger.addEventListener('click', e => {
+      e.preventDefault();
+      const overlay = document.getElementById(trigger.dataset.modal);
+      if (overlay) overlay.classList.add('open');
+    });
+  });
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    // Close on backdrop click
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+    // Close button
+    overlay.querySelector('.modal-close').addEventListener('click', () => {
+      overlay.classList.remove('open');
+    });
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(o => o.classList.remove('open'));
+  });
 })();
 
 /* ── Contact Form ── */
