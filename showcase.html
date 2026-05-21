@@ -365,14 +365,91 @@
     }
 
     footer a { color: var(--a2); text-decoration: none; }
+
+    /* ── MOBILE ── */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: .5rem;
+      z-index: 10;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform .3s, opacity .3s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: .75rem 1rem;
+        position: fixed;
+      }
+      .nav-hamburger { display: flex; }
+      nav ul {
+        display: none;
+        position: fixed;
+        top: 53px; left: 0; right: 0;
+        background: rgba(5,5,15,.97);
+        backdrop-filter: blur(20px);
+        flex-direction: column;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+        padding: .4rem 0 .8rem;
+      }
+      nav ul.open { display: flex; }
+      nav ul li a {
+        display: block;
+        padding: .9rem 1.5rem;
+        font-size: 1rem;
+        letter-spacing: .04em;
+      }
+
+      #hero { height: 100svh; }
+
+      .canvas-wrap { width: 100%; }
+      canvas.demo-canvas { max-width: 100%; height: auto; }
+      #canvas-3d       { max-width: 100%; height: auto; }
+      #code-output-canvas { max-width: 100%; height: auto; }
+
+      .demo-section { padding: 3.5rem 1rem; gap: 1.5rem; }
+      .demo-desc    { font-size: .88rem; }
+
+      .btn { padding: .7rem 1.2rem; min-height: 44px; font-size: .88rem; }
+      .btn-row { gap: .5rem; }
+
+      .editor-wrap { grid-template-columns: 1fr; }
+      textarea#code-input { min-height: 180px; font-size: .82rem; }
+
+      .perf-bar { gap: 1.5rem; }
+      .perf-num { font-size: 1.6rem; }
+
+      .gen-controls { gap: .5rem; }
+
+      .canvas-hint { display: none; }
+
+      footer { font-size: .75rem; padding: 2rem 1rem; }
+    }
   </style>
 </head>
 <body>
 
 <!-- NAV -->
 <nav>
-  <span class="nav-logo">&#9670; Claude Code — Showcase</span>
-  <ul>
+  <span class="nav-logo">&#9670; Claude Code</span>
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul id="nav-menu">
     <li><a href="#physics">Physics</a></li>
     <li><a href="#neural">Neural Net</a></li>
     <li><a href="#genart">Gen Art</a></li>
@@ -540,6 +617,21 @@ for (let i = rings; i >= 1; i--) {
 </footer>
 
 <script>
+/* ── Hamburger nav ── */
+(function () {
+  const btn = document.getElementById('hamburger');
+  const menu = document.getElementById('nav-menu');
+  btn.addEventListener('click', () => {
+    const open = menu.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open);
+  });
+  // close when a link is tapped
+  menu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => { menu.classList.remove('open'); btn.classList.remove('open'); });
+  });
+})();
+
 /* ══════════════════════════════════════════
    HERO — interactive magnetic particle field
 ══════════════════════════════════════════ */
@@ -716,27 +808,41 @@ for (let i = rings; i >= 1; i--) {
 
   // drag to throw
   let dragging = null, dragStart = null, last = null;
-  canvas.addEventListener('mousedown', e => {
+  function getPos(e) {
     const r = canvas.getBoundingClientRect();
-    const mx = (e.clientX - r.left) * (W / r.width);
-    const my = (e.clientY - r.top) * (H / r.height);
-    dragStart = { x: mx, y: my, t: Date.now() };
-    last = { x: mx, y: my };
-    dragging = mkBall(mx, my, 0, 0);
+    const src = e.touches ? e.touches[0] : e;
+    return {
+      x: (src.clientX - r.left) * (W / r.width),
+      y: (src.clientY - r.top)  * (H / r.height)
+    };
+  }
+
+  function onStart(e) {
+    if (e.touches) e.preventDefault();
+    const { x, y } = getPos(e);
+    dragStart = { x, y, t: Date.now() };
+    last = { x, y };
+    dragging = mkBall(x, y, 0, 0);
     dragging.r = Math.random() * 18 + 10;
     balls.push(dragging);
-  });
-  canvas.addEventListener('mousemove', e => {
+  }
+  function onMove(e) {
     if (!dragging) return;
-    const r = canvas.getBoundingClientRect();
-    const mx = (e.clientX - r.left) * (W / r.width);
-    const my = (e.clientY - r.top) * (H / r.height);
-    dragging.vx = (mx - last.x) * .6;
-    dragging.vy = (my - last.y) * .6;
-    dragging.x = mx; dragging.y = my;
-    last = { x: mx, y: my };
-  });
-  canvas.addEventListener('mouseup', () => { dragging = null; });
+    if (e.touches) e.preventDefault();
+    const { x, y } = getPos(e);
+    dragging.vx = (x - last.x) * .6;
+    dragging.vy = (y - last.y) * .6;
+    dragging.x = x; dragging.y = y;
+    last = { x, y };
+  }
+  function onEnd() { dragging = null; }
+
+  canvas.addEventListener('mousedown', onStart);
+  canvas.addEventListener('mousemove', onMove);
+  canvas.addEventListener('mouseup', onEnd);
+  canvas.addEventListener('touchstart', onStart, { passive: false });
+  canvas.addEventListener('touchmove',  onMove,  { passive: false });
+  canvas.addEventListener('touchend',   onEnd);
 
   document.getElementById('physics-add').onclick = () => spawnN(10);
   document.getElementById('physics-clear').onclick = () => { balls = []; collisions = 0; };
